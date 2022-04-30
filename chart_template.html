@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chart template</title>
+</head>
+<body>
+<table>
+    <caption>charts</caption>
+    <tr>
+        <th>Позиция</th><th>Исполнитель</th><th>Песня</th>
+    </tr>
+    {{ range .CurrentChart }}
+    <tr>
+        <td>{{ .Pos }}</td>
+        <td>{{ .Artist }}</td>
+        <td>{{ .Song }}</td>
+    </tr>
+    <tr>
+        <td colspan="3"><iframe width="560" height="315" src="https://www.youtube.com/embed/{{ .Url }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></td>
+    </tr>
+    {{ end }}
+    </table>
+</body>
+</html>
