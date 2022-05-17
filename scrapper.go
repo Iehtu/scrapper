@@ -72,13 +72,16 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	log.Println("Запущена процедура чтения сайта")
+
 	getParse(timeChart)
 	ctx, cancel := chromedp.NewContext(context.Background())
 	for _, element := range currentChart {
-
+		log.Printf("Идет поиск клипа для позиции %d (%s-%s)\n", element.Pos, element.Artist, element.Song)
 		element.fillYoutubeClip(ctx)
 	}
 	defer cancel()
+	log.Println("Запись в файл")
 	f, err := os.OpenFile(fmt.Sprintf("%s.html", timeChart.Format("02012006")), os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		log.Fatal(err)
