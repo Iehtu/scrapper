@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,24 +55,112 @@ func (curChartPosition *chartPosition) fillYoutubeClip(context context.Context) 
 }
 
 type chartPositionArray [numPos]*chartPosition
+type fileDescr struct {
+	FileName string
+	Href     string
+}
 
 var currentChart chartPositionArray
 
 func main() {
 
+	// if len(os.Args) < 2 {
+	// 	fmt.Println("No arguments. Please set necessary date ddmmYYYY format")
+	// 	os.Exit(1)
+	// }
+	http.HandleFunc("/", getIndex)
+	http.HandleFunc("/res", getResult)
+	http.HandleFunc("/action", postAction)
+
+	http.ListenAndServe(":5000", nil)
+	//charDate := os.Args[1]
+	//timeChart, err := time.Parse("02012006", charDate)
+
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+}
+
+func postAction(w http.ResponseWriter, r *http.Request) {
+
+	dateString := r.FormValue("curData")
+	date, err := time.Parse("2006-01-02", dateString)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+
+	err = getHTMLChart(date)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+	http.Redirect(w, r, "/", 307)
+}
+func getIndex(w http.ResponseWriter, r *http.Request) {
+
+	files, err := readDirectory()
+	if err != nil {
+		fmt.Fprintln(w, "error "+err.Error())
+	} else {
+		t, err := template.ParseFiles("./templates/index.html")
+		if err == nil {
+			t.Execute(w, files)
+		} else {
+			fmt.Fprintln(w, err.Error())
+		}
+		// for _, file := range files {
+		// 	fmt.Fprintln(w, file)
+		// }
+	}
+
+}
+
+func getResult(w http.ResponseWriter, r *http.Request) {
+
+	p := r.URL.Query().Get("fileName")
+	f, err := os.ReadFile("./result/" + p + ".html")
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	} else {
+		fmt.Fprint(w, string(f))
+	}
+
+}
+
+func returnResult(file string) *fileDescr {
+	href := file[len("result/"):]
+	fileName := href[:len(href)-len(".html")]
+	fileNameConv := fileName[:2] + "/" + fileName[2:4] + "/" + fileName[4:]
+	hrefConv := "res?fileName=" + fileName
+	return &fileDescr{Href: hrefConv, FileName: fileNameConv}
+}
+
+func readDirectory() ([]*fileDescr, error) {
+
+	result := []*fileDescr{}
+	err := filepath.WalkDir("./result/", func(path string, d fs.DirEntry, err error) error {
+
+		if err != nil {
+			return err
+		}
+		if filepath.Ext(d.Name()) == ".html" {
+			result = append(result, returnResult(path))
+		}
+
+		return nil
+
+	})
+	if err != nil {
+		return nil, err
+	} else {
+		return result, nil
+	}
+}
+
+func getHTMLChart(timeChart time.Time) error {
+
 	type templateData struct {
 		CurrentChart chartPositionArray
-	}
-
-	if len(os.Args) < 2 {
-		fmt.Println("No arguments. Please set necessary date ddmmYYYY format")
-		os.Exit(1)
-	}
-
-	charDate := os.Args[1]
-	timeChart, err := time.Parse("02012006", charDate)
-	if err != nil {
-		log.Fatalln(err)
 	}
 
 	log.Println("Запущена процедура чтения сайта")
@@ -82,24 +173,25 @@ func main() {
 	}
 	defer cancel()
 	log.Println("Запись в файл")
-	f, err := os.OpenFile(fmt.Sprintf("%s.html", timeChart.Format("02012006")), os.O_WRONLY|os.O_CREATE, 0777)
+	f, err := os.OpenFile("./result/"+fmt.Sprintf("%s.html", timeChart.Format("02012006")), os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer f.Close()
 
 	paths := []string{
-		"chart_template.html",
+		"./templates/chart_template.html",
 	}
 	t, err := template.ParseFiles(paths...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = t.Execute(f, templateData{CurrentChart: currentChart})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
+	return nil
 }
 
 func getParse(dateChart time.Time) {

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form method="post" action="action">
+        <input type="date" name="curData">
+        <input type="submit" value="Получить">
+    </form>
+    <div>Полученные чарты:</div>
+    <table>
+    {{ range . }}
+        <tr>
+            <td>
+                <a href="{{ .Href }}">{{ .FileName }}</a>
+            </td>
+        </tr>
+    {{ end }}
+    </table>
+</body>
+</html>
