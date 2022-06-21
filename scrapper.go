@@ -19,6 +19,7 @@ import (
 const (
 	CHARTS_URL           string = "https://www.officialcharts.com/charts/singles-chart/%s"
 	CHARTS_URL_DE        string = "https://www.offiziellecharts.de/charts/single/for-date-%d"
+	CHARTS_URL_US        string = "https://www.billboard.com/charts/hot-100/%s"
 	YOUTUBE_URL_TEMPLATE string = `<iframe width="560" height="315" src="{%s}"
 	frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
 	picture-in-picture" allowfullscreen></iframe>
@@ -192,10 +193,12 @@ func getHTMLChart(timeChart time.Time, country string) error {
 	}
 
 	log.Println("Запущена процедура чтения сайта")
-	if country == "EN" {
-		getParse(timeChart)
-	} else {
+	if country == "DE" {
 		getParseDe(timeChart)
+	} else if country == "US" {
+		getParseUS(timeChart)
+	} else {
+		getParse(timeChart)
 	}
 	ctx, cancel := chromedp.NewContext(context.Background())
 	for _, element := range currentChart {
@@ -257,6 +260,24 @@ func getParseDe(dateChart time.Time) {
 				Pos:    num + 1,
 				Artist: h.ChildText(".info-artist"),
 				Song:   h.ChildText(".info-title"),
+			}
+			num++
+		}
+
+	})
+	c.Visit(realURL)
+}
+
+func getParseUS(dateChart time.Time) {
+	realURL := fmt.Sprintf(CHARTS_URL_US, dateChart.Format("2006-01-02"))
+	c := colly.NewCollector()
+	num := 0
+	c.OnHTML("div.o-chart-results-list-row-container", func(h *colly.HTMLElement) {
+		if num < numPos {
+			currentChart[num] = &chartPosition{
+				Pos:    num + 1,
+				Artist: h.ChildText("span.c-label.u-letter-spacing-0021.u-max-width-330"),
+				Song:   h.ChildText("h3#title-of-a-story.c-title.a-no-trucate.a-font-primary-bold-s.u-letter-spacing-0021"),
 			}
 			num++
 		}
