@@ -2,24 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chart template</title>
+    <title>{{ .Title}}</title>
+    <link rel="stylesheet" href="/static/styles/style_chart.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
 </head>
 <body>
-<table>
-    <caption>charts</caption>
+    <div class="container">
+        
+            <nav class="navbar navbar-dark bg-primary">
+                <div class="container-fluid">
+                <a href="/" class="navbar-brand mb-0 ml-3 h1">Chart scapper</a>
+                </div>
+            </nav>
+        
+
+<table class="table table-primary table-striped">
+    <h1>{{ .Title}}</h1>
     <tr>
-        <th>Позиция</th><th>Исполнитель</th><th>Песня</th>
+        <th class="text-center" scope="col">Позиция</th><th class="text-center" scope="col">Исполнитель</th><th class="text-center" scope="col">Песня</th>
     </tr>
     {{ range .CurrentChart }}
     <tr>
-        <td>{{ .Pos }}</td>
-        <td>{{ .Artist }}</td>
-        <td>{{ .Song }}</td>
+        <td class="text-center">{{ .Pos }}</td>
+        <td class="text-center">{{ .Artist }}</td>
+        <td class="text-center">{{ .Song }}</td>
     </tr>
     <tr>
-        <td colspan="3"><iframe width="560" height="315" src="https://www.youtube.com/embed/{{ .Url }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></td>
+        <td class="text-center" colspan="3"><iframe width="560" height="315" src="https://www.youtube.com/embed/{{ .Url }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></td>
     </tr>
     {{ end }}
     </table>
 </body>
+</div>
 </html>

@@ -18,6 +18,7 @@ import (
 
 const (
 	CHARTS_URL           string = "https://www.officialcharts.com/charts/singles-chart/%s"
+	CHARTS_URL_DE        string = "https://www.offiziellecharts.de/charts/single/for-date-%d"
 	YOUTUBE_URL_TEMPLATE string = `<iframe width="560" height="315" src="{%s}"
 	frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope;
 	picture-in-picture" allowfullscreen></iframe>
@@ -68,11 +69,35 @@ func main() {
 	// 	fmt.Println("No arguments. Please set necessary date ddmmYYYY format")
 	// 	os.Exit(1)
 	// }
-	http.HandleFunc("/", getIndex)
-	http.HandleFunc("/res", getResult)
-	http.HandleFunc("/action", postAction)
+	if len(os.Args) < 2 {
+		mux := http.NewServeMux()
 
-	http.ListenAndServe(":5000", nil)
+		log.Println("Server started at port 5000")
+		mux.HandleFunc("/", getIndex)
+		mux.HandleFunc("/res", getResult)
+		mux.HandleFunc("/action", postAction)
+
+		fileServerStyles := http.FileServer(http.Dir("./static"))
+		mux.Handle("/static/", http.StripPrefix("/static", fileServerStyles))
+
+		err := http.ListenAndServe(":5000", mux)
+		log.Fatal(err)
+	} else {
+		charDate := os.Args[1]
+		timeChart, err := time.Parse("02012006", charDate)
+		if err != nil {
+
+			log.Fatal(err)
+		} else {
+			country := "EN"
+			if len(os.Args) > 2 {
+				country = os.Args[2]
+
+			}
+			getHTMLChart(timeChart, country)
+		}
+
+	}
 	//charDate := os.Args[1]
 	//timeChart, err := time.Parse("02012006", charDate)
 
@@ -85,12 +110,14 @@ func main() {
 func postAction(w http.ResponseWriter, r *http.Request) {
 
 	dateString := r.FormValue("curData")
+	country := r.FormValue("country")
 	date, err := time.Parse("2006-01-02", dateString)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
 
-	err = getHTMLChart(date)
+	log.Printf("Поиск чартов на дату: %s", date)
+	err = getHTMLChart(date, country)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -157,23 +184,29 @@ func readDirectory() ([]*fileDescr, error) {
 	}
 }
 
-func getHTMLChart(timeChart time.Time) error {
+func getHTMLChart(timeChart time.Time, country string) error {
 
 	type templateData struct {
 		CurrentChart chartPositionArray
+		Title        string
 	}
 
 	log.Println("Запущена процедура чтения сайта")
-
-	getParse(timeChart)
+	if country == "EN" {
+		getParse(timeChart)
+	} else {
+		getParseDe(timeChart)
+	}
 	ctx, cancel := chromedp.NewContext(context.Background())
 	for _, element := range currentChart {
-		log.Printf("Идет поиск клипа для позиции %d (%s-%s)\n", element.Pos, element.Artist, element.Song)
-		element.fillYoutubeClip(ctx)
+		if element != nil {
+			log.Printf("Идет поиск клипа для позиции %d (%s-%s)\n", element.Pos, element.Artist, element.Song)
+			element.fillYoutubeClip(ctx)
+		}
 	}
 	defer cancel()
 	log.Println("Запись в файл")
-	f, err := os.OpenFile("./result/"+fmt.Sprintf("%s.html", timeChart.Format("02012006")), os.O_WRONLY|os.O_CREATE, 0777)
+	f, err := os.OpenFile("./result/"+fmt.Sprintf("%s_%s.html", timeChart.Format("02012006"), country), os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return err
 	}
@@ -186,7 +219,7 @@ func getHTMLChart(timeChart time.Time) error {
 	if err != nil {
 		return err
 	}
-	err = t.Execute(f, templateData{CurrentChart: currentChart})
+	err = t.Execute(f, templateData{CurrentChart: currentChart, Title: fmt.Sprintf("CHARTS(%s) %s", country, timeChart)})
 	if err != nil {
 		return err
 	}
@@ -205,6 +238,25 @@ func getParse(dateChart time.Time) {
 				Pos:    num + 1,
 				Artist: h.ChildText(".artist"),
 				Song:   h.ChildText(".title"),
+			}
+			num++
+		}
+
+	})
+	c.Visit(realURL)
+}
+
+func getParseDe(dateChart time.Time) {
+
+	realURL := fmt.Sprintf(CHARTS_URL_DE, dateChart.UnixMilli())
+	c := colly.NewCollector()
+	num := 0
+	c.OnHTML("tr.drill-down-link", func(h *colly.HTMLElement) {
+		if num < numPos {
+			currentChart[num] = &chartPosition{
+				Pos:    num + 1,
+				Artist: h.ChildText(".info-artist"),
+				Song:   h.ChildText(".info-title"),
 			}
 			num++
 		}

@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'Oxanium';
+    src: local('Oxanium Medium'), local('Oxanium-Medium'),
+        url('Oxanium-Medium.woff2') format('woff2'),
+        url('Oxanium-Medium.woff') format('woff'),
+        url('Oxanium-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }

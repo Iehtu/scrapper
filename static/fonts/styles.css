@@ -1,0 +1,19 @@
+@font-face {
+    font-family: 'M PLUS 2';
+    src: local('M PLUS 2 Thin'), local('M-PLUS-2-Thin'),
+        url('MPLUS2-Thin.woff2') format('woff2'),
+        url('MPLUS2-Thin.woff') format('woff'),
+        url('MPLUS2-Thin.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Oxanium';
+    src: local('Oxanium Medium'), local('Oxanium-Medium'),
+        url('Oxanium-Medium.woff2') format('woff2'),
+        url('Oxanium-Medium.woff') format('woff'),
+        url('Oxanium-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
