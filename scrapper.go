@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+	"regexp"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -35,6 +35,8 @@ type chartPosition struct {
 	Url    string
 }
 
+var re = regexp.MustCompile(`(?m)\/watch\?v=([^\&]+)`)
+
 func (curChartPosition *chartPosition) fillYoutubeClip(context context.Context) {
 
 	var (
@@ -48,7 +50,10 @@ func (curChartPosition *chartPosition) fillYoutubeClip(context context.Context) 
 		chromedp.Navigate(url),
 		chromedp.AttributeValue(`#video-title`, "href", &href, &ok, chromedp.ByQuery))
 	if ok {
-		curChartPosition.Url = strings.Replace(href, "/watch?v=", "", 1)
+		href_short := re.FindStringSubmatch(href)
+		if len(href_short) > 1 {
+			curChartPosition.Url = href_short[1]
+		}
 	}
 	if err != nil {
 		log.Fatal(err)
