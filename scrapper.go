@@ -127,7 +127,7 @@ func postAction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
-	http.Redirect(w, r, "/", 307)
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 func getIndex(w http.ResponseWriter, r *http.Request) {
 
@@ -203,7 +203,7 @@ func getHTMLChart(timeChart time.Time, country string) error {
 	} else if country == "US" {
 		getParseUS(timeChart)
 	} else {
-		getParse(timeChart)
+		getParseEn(timeChart)
 	}
 	ctx, cancel := chromedp.NewContext(context.Background())
 	for _, element := range currentChart {
@@ -235,17 +235,16 @@ func getHTMLChart(timeChart time.Time, country string) error {
 	return nil
 }
 
-func getParse(dateChart time.Time) {
+func getParseEn(dateChart time.Time) {
 	realURL := fmt.Sprintf(CHARTS_URL, dateChart.Format("20060102"))
 	c := colly.NewCollector()
 	num := 0
-	c.OnHTML("div.title-artist", func(h *colly.HTMLElement) {
+	c.OnHTML("div.description.block", func(h *colly.HTMLElement) {
 		if num < numPos {
-
 			currentChart[num] = &chartPosition{
 				Pos:    num + 1,
-				Artist: h.ChildText(".artist"),
-				Song:   h.ChildText(".title"),
+				Artist: h.ChildText("a.chart-artist"),
+				Song:   h.ChildText("a.chart-name"),
 			}
 			num++
 		}
